@@ -1,17 +1,55 @@
-# el_piston
+El Pistón 🔧
+Aplicación móvil para la gestión de un taller mecánico, desarrollada con Flutter y Dart.
+🚗 Funcionalidades
+- Gestión de clientes.
+- Registro y administración de vehículos.
+- Gestión de mecánicos.
+- Creación y seguimiento de órdenes de servicio.
+- Gestión de trabajos realizados.
+- Control de repuestos.
+- Registro de pagos.
+- Consulta del estado de las órdenes.
+- Modo claro y oscuro.
+- Almacenamiento local mediante Drift.
+🛠️ Tecnologías utilizadas
+- Flutter
+- Dart
+- Drift
+- SQLite
+- GoRouter
+📂 Estructura del proyecto
+lib/
+├── data/
+│   ├── database/
+│   ├── models/
+│   ├── datos_prueba.dart
+│   ├── taller_repository.dart
+│   └── tema_app.dart
+├── router/
+│   └── app_router.dart
+├── screens/
+└── main.dart
 
-A new Flutter project.
 
-## Getting Started
+▶️ Instalación y ejecución
+1. Clonar el repositorio:
+git clone https://github.com/randyvalle1973/app-el_piston.git
 
-This project is a starting point for a Flutter application.
 
-A few resources to get you started if this is your first Flutter project:
+2. Entrar en la carpeta:
+cd el_piston
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+3. Instalar las dependencias:
+flutter pub get
+
+
+4. Ejecutar la aplicación:
+flutter run
+
+
+👨‍💻 Autor
+Proyecto académico desarrollado como sistema de gestión para un taller mecánico.
+
+El Pistón – Gestión sencilla y eficiente para talleres mecánicos.
+
