@@ -4,6 +4,214 @@ import 'package:go_router/go_router.dart';
 import '../data/taller_repository.dart';
 import '../data/models/taller_models.dart' as modelos;
 
+class _FormularioRepuestoDialog extends StatefulWidget {
+  final Color fondo;
+  final Color superficie;
+  final Color texto;
+  final Color textoSecundario;
+  final Future<bool> Function({
+    required String nombre,
+    required String codigo,
+    required double precio,
+    required int existencias,
+    required int stockMinimo,
+  })
+  onGuardar;
+
+  const _FormularioRepuestoDialog({
+    required this.fondo,
+    required this.superficie,
+    required this.texto,
+    required this.textoSecundario,
+    required this.onGuardar,
+  });
+
+  @override
+  State<_FormularioRepuestoDialog> createState() =>
+      _FormularioRepuestoDialogState();
+}
+
+class _FormularioRepuestoDialogState extends State<_FormularioRepuestoDialog> {
+  static const Color naranja = Color(0xFFFF7A1A);
+
+  final nombreController = TextEditingController();
+  final codigoController = TextEditingController();
+  final precioController = TextEditingController();
+  final existenciasController = TextEditingController();
+  final minimoController = TextEditingController(text: '5');
+  final formKey = GlobalKey<FormState>();
+
+  bool guardando = false;
+
+  @override
+  void dispose() {
+    nombreController.dispose();
+    codigoController.dispose();
+    precioController.dispose();
+    existenciasController.dispose();
+    minimoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _guardar() async {
+    if (guardando || !formKey.currentState!.validate()) return;
+
+    setState(() {
+      guardando = true;
+    });
+
+    final registrado = await widget.onGuardar(
+      nombre: nombreController.text.trim(),
+      codigo: codigoController.text.trim(),
+      precio: double.parse(precioController.text.trim().replaceAll(',', '.')),
+      existencias: int.parse(existenciasController.text.trim()),
+      stockMinimo: int.parse(minimoController.text.trim()),
+    );
+
+    if (!mounted) return;
+
+    if (registrado) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() {
+        guardando = false;
+      });
+    }
+  }
+
+  Widget _campo(
+    TextEditingController controlador,
+    String etiqueta,
+    IconData icono, {
+    bool numerico = false,
+    bool decimal = false,
+  }) {
+    return TextFormField(
+      controller: controlador,
+      style: TextStyle(color: widget.texto, fontSize: 13),
+      keyboardType: numerico
+          ? TextInputType.numberWithOptions(decimal: decimal)
+          : TextInputType.text,
+      decoration: InputDecoration(
+        labelText: etiqueta,
+        labelStyle: TextStyle(color: widget.textoSecundario),
+        prefixIcon: Icon(icono, color: naranja, size: 20),
+        filled: true,
+        fillColor: widget.fondo,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: naranja),
+        ),
+      ),
+      validator: (valor) {
+        if (valor == null || valor.trim().isEmpty) {
+          return 'Este campo es obligatorio';
+        }
+
+        if (numerico) {
+          final numero = decimal
+              ? double.tryParse(valor.trim().replaceAll(',', '.'))
+              : int.tryParse(valor.trim());
+
+          if (numero == null) return 'Introduce un número válido';
+          if (numero < 0) return 'No puede ser negativo';
+
+          if (decimal && numero <= 0) {
+            return 'El precio debe ser mayor que cero';
+          }
+        }
+
+        return null;
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !guardando,
+      child: AlertDialog(
+        backgroundColor: widget.superficie,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Nuevo repuesto',
+          style: TextStyle(color: widget.texto, fontWeight: FontWeight.bold),
+        ),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _campo(
+                  nombreController,
+                  'Nombre del repuesto',
+                  Icons.inventory_2_outlined,
+                ),
+                const SizedBox(height: 12),
+                _campo(codigoController, 'Código', Icons.qr_code),
+                const SizedBox(height: 12),
+                _campo(
+                  precioController,
+                  'Precio de venta',
+                  Icons.attach_money,
+                  numerico: true,
+                  decimal: true,
+                ),
+                const SizedBox(height: 12),
+                _campo(
+                  existenciasController,
+                  'Existencias iniciales',
+                  Icons.warehouse_outlined,
+                  numerico: true,
+                ),
+                const SizedBox(height: 12),
+                _campo(
+                  minimoController,
+                  'Límite de stock bajo',
+                  Icons.warning_amber_outlined,
+                  numerico: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: guardando ? null : () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: naranja,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: guardando ? null : _guardar,
+            child: guardando
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class InventarioScreen extends StatefulWidget {
   final TallerRepository taller;
 
@@ -203,186 +411,16 @@ class _InventarioScreenState extends State<InventarioScreen> {
   }
 
   Future<void> _mostrarFormulario() async {
-    final nombreController = TextEditingController();
-    final codigoController = TextEditingController();
-    final precioController = TextEditingController();
-    final existenciasController = TextEditingController();
-    final minimoController = TextEditingController(text: '5');
-    final formKey = GlobalKey<FormState>();
-
-    await showDialog(
+    await showDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        bool guardando = false;
-
-        return StatefulBuilder(
-          builder: (context, actualizarDialogo) {
-            return AlertDialog(
-              backgroundColor: superficie,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: Text(
-                'Nuevo repuesto',
-                style: TextStyle(color: texto, fontWeight: FontWeight.bold),
-              ),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _campoFormulario(
-                        nombreController,
-                        'Nombre del repuesto',
-                        Icons.inventory_2_outlined,
-                      ),
-                      const SizedBox(height: 12),
-                      _campoFormulario(
-                        codigoController,
-                        'Código',
-                        Icons.qr_code,
-                      ),
-                      const SizedBox(height: 12),
-                      _campoFormulario(
-                        precioController,
-                        'Precio de venta',
-                        Icons.attach_money,
-                        numerico: true,
-                        decimal: true,
-                      ),
-                      const SizedBox(height: 12),
-                      _campoFormulario(
-                        existenciasController,
-                        'Existencias iniciales',
-                        Icons.warehouse_outlined,
-                        numerico: true,
-                      ),
-                      const SizedBox(height: 12),
-                      _campoFormulario(
-                        minimoController,
-                        'Límite de stock bajo',
-                        Icons.warning_amber_outlined,
-                        numerico: true,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: guardando
-                      ? null
-                      : () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: naranja,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: guardando
-                      ? null
-                      : () async {
-                          if (!formKey.currentState!.validate()) return;
-
-                          actualizarDialogo(() {
-                            guardando = true;
-                          });
-
-                          final registrado = await _agregarRepuesto(
-                            nombre: nombreController.text.trim(),
-                            codigo: codigoController.text.trim(),
-                            precio: double.parse(
-                              precioController.text.trim().replaceAll(',', '.'),
-                            ),
-                            existencias: int.parse(
-                              existenciasController.text.trim(),
-                            ),
-                            stockMinimo: int.parse(
-                              minimoController.text.trim(),
-                            ),
-                          );
-
-                          if (!dialogContext.mounted) return;
-
-                          if (registrado) {
-                            Navigator.of(dialogContext).pop();
-                          } else {
-                            actualizarDialogo(() {
-                              guardando = false;
-                            });
-                          }
-                        },
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    nombreController.dispose();
-    codigoController.dispose();
-    precioController.dispose();
-    existenciasController.dispose();
-    minimoController.dispose();
-  }
-
-  Widget _campoFormulario(
-    TextEditingController controlador,
-    String etiqueta,
-    IconData icono, {
-    bool numerico = false,
-    bool decimal = false,
-  }) {
-    return TextFormField(
-      controller: controlador,
-      style: TextStyle(color: texto, fontSize: 13),
-      keyboardType: numerico
-          ? TextInputType.numberWithOptions(decimal: decimal)
-          : TextInputType.text,
-      decoration: InputDecoration(
-        labelText: etiqueta,
-        labelStyle: TextStyle(color: textoSecundario),
-        prefixIcon: Icon(icono, color: naranja, size: 20),
-        filled: true,
-        fillColor: fondo,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: naranja),
-        ),
+      barrierDismissible: false,
+      builder: (_) => _FormularioRepuestoDialog(
+        fondo: fondo,
+        superficie: superficie,
+        texto: texto,
+        textoSecundario: textoSecundario,
+        onGuardar: _agregarRepuesto,
       ),
-      validator: (valor) {
-        if (valor == null || valor.trim().isEmpty) {
-          return 'Este campo es obligatorio';
-        }
-
-        if (numerico) {
-          final numero = decimal
-              ? double.tryParse(valor.trim().replaceAll(',', '.'))
-              : int.tryParse(valor.trim());
-
-          if (numero == null) return 'Introduce un número válido';
-
-          if (numero < 0) return 'No puede ser negativo';
-
-          if (decimal && numero <= 0) {
-            return 'El precio debe ser mayor que cero';
-          }
-        }
-
-        return null;
-      },
     );
   }
 
